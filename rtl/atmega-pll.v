@@ -20,22 +20,22 @@
 
 `timescale 1ns / 1ps
 
-
 module atmega_pll # (
-	parameter PLATFORM = "XILINX",
 	parameter BUS_ADDR_DATA_LEN = 16,
-	parameter PLLCSR_ADDR = 'h29,
-	parameter PLLFRQ_ADDR = 'h32,
+	parameter PLLCSR_ADDR = 'h49,
+	parameter PLLFRQ_ADDR = 'h52,
 	parameter USE_PLL = "TRUE"// If "FALSE" tim_ck_out = clk
 )(
 	input rst,
 	input clk,
 	input clk_pll, // 192Mhz input.
-	input [BUS_ADDR_DATA_LEN-1:0]addr,
-	input wr,
-	input rd,
-	input [7:0]bus_in,
-	output reg [7:0]bus_out,
+
+	input [BUS_ADDR_DATA_LEN-1:0]addr_dat,
+	input wr_dat,
+	input rd_dat,
+	input [7:0]bus_dat_in,
+	output reg [7:0]bus_dat_out,
+	
 	output pll_enabled,
 
 	output usb_ck_out,
@@ -59,7 +59,7 @@ reg tim_clk_1_5;
 reg tim_clk_2;
 reg usb_clk_2_int;
 
-always @ (posedge rst or posedge clk)
+always @ (posedge clk)
 begin
 	if(rst)
 	begin
@@ -69,11 +69,11 @@ begin
 	else
 	begin
 		PLLCSR[0] <= PLLCSR[1]; // Make it ready
-		if(wr)
+		if(wr_dat)
 		begin
-			case(addr)
-			PLLCSR_ADDR: PLLCSR <= bus_in;
-			PLLFRQ_ADDR: PLLFRQ <= bus_in;
+			case(addr_dat)
+			PLLCSR_ADDR: PLLCSR <= bus_dat_in;
+			PLLFRQ_ADDR: PLLFRQ <= bus_dat_in;
 			endcase
 		end
 	end
@@ -193,12 +193,12 @@ end
 
 always @ *
 begin
-	bus_out = 8'h00;
-	if(rd & ~rst)
+	bus_dat_out = 8'h00;
+	if(rd_dat & ~rst)
 	begin
-		case(addr)
-		PLLCSR_ADDR: bus_out = PLLCSR;
-		PLLFRQ_ADDR: bus_out = PLLFRQ;
+		case(addr_dat)
+		PLLCSR_ADDR: bus_dat_out = PLLCSR;
+		PLLFRQ_ADDR: bus_dat_out = PLLFRQ;
 		endcase
 	end
 end
