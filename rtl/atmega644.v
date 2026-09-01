@@ -2,16 +2,13 @@
  * This IP is the MEGA/XMEGA ATMEGA644 implementation.
  *
  * Instantiates the same MEGA/XMEGA core engine and peripheral IP already shipping in
- * MiSTer-devel/Arduboy_MiSTer (cores/Arduboy_MiSTer/rtl/avr/{mega-core,mega-alu,mega-reg,
- * mega-ram,mega-def,atmega-tim-8bit,atmega-tim-16bit,atmega-pio,atmega-uart,atmega-spi-m,
- * atmega-eep}.v), all Copyright (C) Iulian Gheorghiu (morgoth@devboard.tech), GPLv2-or-later.
+ * MiSTer-devel/Arduboy_MiSTer (rtl/avr/{mega-core,mega-alu,mega-reg,mega-ram,mega-def,
+ * atmega-tim-8bit,atmega-tim-16bit,atmega-pio,atmega-uart,atmega-spi-m,atmega-eep}.v), all
+ * Copyright (C) Iulian Gheorghiu (morgoth@devboard.tech), GPLv2-or-later.
  * This file — the chip-specific top level, playing the same role atmega32u4.v plays for the
- * ATmega32U4 — is new, written for the Uzebox MiSTer core project (projects/uzebox/), against
- * the real ATmega644 datasheet (Atmel doc2593O-AVR-02/12, on disk at
- * projects/uzebox/research/ATmega644-datasheet-doc2593O.pdf) and the real Uzebox V5.0 schematic
- * (projects/uzebox/research/uzebox-master/schematics/Uzebox/V5.0/). See
- * projects/uzebox/PROJECT.md for the full sourced derivation of every parameter and address
- * below — nothing here is guessed.
+ * ATmega32U4 — is new, written against the ATmega644 datasheet (Atmel doc2593O-AVR-02/12) and
+ * the Uzebox V5.0 schematic (github.com/Uzebox/uzebox, schematics/Uzebox/V5.0/). Every
+ * parameter and address below carries its datasheet citation inline — nothing here is guessed.
  *
  * Deliberately chip-generic, not Uzebox-specific: every real ATmega644 pin is exposed under
  * its real name via a full PORT/DDR/PIN interface. A separate "board" module (future work,
