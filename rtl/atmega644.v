@@ -759,7 +759,11 @@ atmega_eep # (
     .EEARL_ADDR('h41),
     .EEDR_ADDR('h40),
     .EECR_ADDR('h3F),
-    .EEP_SIZE(2048)
+    .EEP_SIZE(2048),
+    // 3.4 ms (ATmega644 Table 5-3) at the Uzebox's 28.63636 MHz = 97,364 core
+    // clocks. Revisit if the core clock changes.
+    .EEP_WRITE_CYCLES(97364),
+    .EEP_WRITE_CNT_WIDTH(17)
 )eep(
     .rst(rst),
     .clk(clk),
@@ -769,7 +773,16 @@ atmega_eep # (
     .bus_dat_in(core_data_out),
     .bus_dat_out(dat_eeprom_d_out),
     .int_out(int_ee_ready),
-    .int_rst(int_ee_ready_rst)
+    .int_rst(int_ee_ready_rst),
+    // Tied off explicitly: atmega-eep.v indexes its array through
+    // ext_eep_data_en, so leaving these unconnected makes the whole EEPROM
+    // read as X in simulation. Synthesis infers 0, hardware was never affected.
+    .ext_eep_addr(17'd0),
+    .ext_eep_data_in(8'd0),
+    .ext_eep_data_wr(1'b0),
+    .ext_eep_data_out(),
+    .ext_eep_data_rd(1'b0),
+    .ext_eep_data_en(1'b0)
     );
 end
 else
