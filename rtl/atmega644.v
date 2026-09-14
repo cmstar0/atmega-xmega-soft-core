@@ -162,6 +162,7 @@ module atmega644 # (
 
 wire core_clk = clk;
 wire wdt_rst;
+wire wdr_pulse;
 
 /* CORE WIRES */
 wire [`BUS_ADDR_DATA_LEN-1:0]data_addr;
@@ -209,7 +210,7 @@ wire int_pcint0;
 wire int_pcint1;
 wire int_pcint2;
 wire int_pcint3;
-wire int_wdt = 0; // watchdog disabled (WATCHDOG_CNT_WIDTH=0), matches atmega32u4.v's own convention
+wire int_wdt;
 wire int_timer2_compa;
 wire int_timer2_compb;
 wire int_timer2_ovf;
@@ -792,6 +793,28 @@ end
 endgenerate
 /* !EEPROM */
 
+/* WATCHDOG TIMER */
+wire [7:0]dat_wdt_d_out;
+atmega_wdt # (
+    .BUS_ADDR_DATA_LEN(8),
+    .WDTCSR_ADDR('h60),
+    // 128 kHz WDT oscillator at the Uzebox's 28.63636 MHz = 224 core clocks.
+    .OSC_PRESCALER(224),
+    .OSC_PRESCALER_WIDTH(8)
+)wdt(
+    .rst(rst),
+    .clk(clk),
+    .addr_dat(data_addr[7:0]),
+    .wr_dat(data_write & ~ram_sel),
+    .rd_dat(data_read & ~ram_sel),
+    .bus_dat_in(core_data_out),
+    .bus_dat_out(dat_wdt_d_out),
+    .wdr(wdr_pulse),
+    .int_out(int_wdt),
+    .int_rst(int_wdt_rst)
+    );
+/* !WATCHDOG TIMER */
+
 /* RAM */
 wire [7:0]ram_bus_out;
 wire [7:0]ram_bus_out2;
@@ -838,6 +861,7 @@ begin
             'h37:             core_data_in = dat_tim2_d_out;
             'h42, 'h41, 'h40,
             'h3F:             core_data_in = dat_eeprom_d_out;
+            'h60:             core_data_in = dat_wdt_d_out;
             'hc6, 'hc0, 'hc1,
             'hc2, 'hc4, 'hc5: core_data_in = dat_uart0_d_out;
         endcase
@@ -917,7 +941,8 @@ mega # (
     int_wdt_rst,
     int_pcint3_rst, int_pcint2_rst, int_pcint1_rst, int_pcint0_rst,
     int_int2_rst, int_int1_rst, int_int0_rst}
-    )
+    ),
+    .wdt_rst_out(wdr_pulse)
 );
 /* !ATMEGA CORE */
 
