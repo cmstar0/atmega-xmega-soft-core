@@ -157,7 +157,10 @@ module atmega644 # (
     output [7:0] DDRC_out,
     input  [7:0] PIND_ext,
     output [7:0] PORTD_out,
-    output [7:0] DDRD_out
+    output [7:0] DDRD_out,
+    // Wall-clock seed for the watchdog oscillator jitter; the Uzebox kernel harvests
+    // that drift as its only entropy source. Tie to 0 if the board has no clock.
+    input [15:0] wdt_osc_seed
     );
 
 wire core_clk = clk;
@@ -810,6 +813,7 @@ atmega_wdt # (
     .bus_dat_in(core_data_out),
     .bus_dat_out(dat_wdt_d_out),
     .wdr(wdr_pulse),
+    .osc_seed(wdt_osc_seed),
     .int_out(int_wdt),
     .int_rst(int_wdt_rst)
     );

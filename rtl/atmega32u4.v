@@ -907,6 +907,7 @@ atmega_wdt # (
     .rd_dat(data_read & ~ram_sel),
     .bus_dat_in(core_data_out),
     .bus_dat_out(dat_wdt_d_out),
+    .osc_seed(16'd0),   // Arduboy's kernel never harvests watchdog drift
     .wdr(wdr_pulse),
     .int_out(int_wdt),
     .int_rst(int_wdt_rst)
