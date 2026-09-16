@@ -203,7 +203,17 @@ assign pd_in = PIND_ext;
 assign PORTA_out = pa_out;
 assign PORTB_out = pb_out;
 assign PORTC_out = pc_out;
-assign PORTD_out = pd_out;
+// Timer2's compare outputs, declared here because PORTD_out below consumes OC2A.
+wire tim2_oca, tim2_ocb, tim2_oca_io_connect, tim2_ocb_io_connect;
+
+// PD7 carries OC2A when the waveform generator owns it -- the Uzebox's only audio path. The
+// port override is a real chip function, not a board detail: doc2593O S15.6, "The general I/O
+// port function is overridden by the Output Compare (OC2x) from the Waveform Generator if
+// either of the COM2x1:0 bits are set", and Table 12-13 gives PD7's PVOE/PVOV as OC2A. DDR
+// still gates the pin, which uzebox_board.v applies via DDRD_out. Without this the pin showed
+// the PORTD latch, which the kernel never writes (uzeboxCore.c:135 omits PD7), so audio sat at
+// a constant level. The other OC pins on this part stay unrouted -- a pre-existing gap.
+assign PORTD_out = {tim2_oca_io_connect ? tim2_oca : pd_out[7], pd_out[6:0]};
 
 /* Interrupt wires — 27 real ATmega644 sources, datasheet S10.1 Table 10-1, vectors 2-28 */
 wire int_int0;
@@ -596,6 +606,7 @@ atmega_tim_8bit # (
     .TIMSK_ADDR('h6E),
     .TIFR_ADDR('h35)
 )tim_0(
+    .halt(1'b0),
     .rst(rst),
     .clk(clk),
     .clk8(clk8),
@@ -718,6 +729,7 @@ atmega_tim_8bit # (
     .TIMSK_ADDR('h70),
     .TIFR_ADDR('h37)
 )tim_2(
+    .halt(1'b0),
     .rst(rst),
     .clk(clk),
     .clk8(clk8),
@@ -749,7 +761,6 @@ assign int_timer2_compa = 1'b0;
 assign int_timer2_compb = 1'b0;
 end
 endgenerate
-wire tim2_oca, tim2_ocb, tim2_oca_io_connect, tim2_ocb_io_connect;
 /* !TIMER 2 */
 
 /* EEPROM — 2KB, EEP_SIZE below must match `EEP_ADDR_WIDTH (2^11 = 2048) */
