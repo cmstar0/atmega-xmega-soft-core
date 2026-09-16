@@ -45,7 +45,6 @@ module atmega_eep # (
     output int_out,
     input int_rst,
 
-
     input [16:0]ext_eep_addr,
     input [7:0]ext_eep_data_in,
     input ext_eep_data_wr,
