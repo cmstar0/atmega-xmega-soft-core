@@ -193,26 +193,26 @@ assign pd_in = PIND_ext;
 
 /* Real GPIO output driven straight through — DDR is exposed separately below so a board
  * wrapper can build correct tristate behavior. Note (2026-08-10, carried over from the
- * arduboy-atmega-module project's audit of this same shared atmega-pio.v): io_out is computed
- * as `DDR[n] ? PORT[n] : 1'b0` (atmega-pio.v:54-61), i.e. it substitutes a hard 0 instead of
- * real input-mode pull-up behavior when DDR=0. That's a real, already-tracked limitation of the
- * shared peripheral file (not something this file introduces or fixes) — flagged here because
- * PORTA's joystick shift-register lines are genuinely bidirectional-in-spirit on real Uzebox
- * hardware and a future board wrapper needs to know about this before trusting PORTA_out's value
- * while DDRA_out indicates an input pin. */
+ * arduboy-atmega-module project's audit): atmega-pio.v:56-63 is `assign io_out[n] = PORT[n];`
+ * with no DDR term at all, so PORTx_out carries the PORT latch whether the pin is configured as
+ * an output or not. A board wrapper must apply DDRx_out itself before trusting PORTx_out --
+ * PORTA's joystick shift-register lines are bidirectional-in-spirit on real Uzebox hardware.
+ * (Corrected 2026-09-16: this note previously described io_out as `DDR[n] ? PORT[n] : 1'b0`,
+ * which the shared file has never done.) */
 assign PORTA_out = pa_out;
 assign PORTB_out = pb_out;
 assign PORTC_out = pc_out;
 // Timer2's compare outputs, declared here because PORTD_out below consumes OC2A.
 wire tim2_oca, tim2_ocb, tim2_oca_io_connect, tim2_ocb_io_connect;
 
-// PD7 carries OC2A when the waveform generator owns it -- the Uzebox's only audio path. The
-// port override is a real chip function, not a board detail: doc2593O S15.6, "The general I/O
-// port function is overridden by the Output Compare (OC2x) from the Waveform Generator if
-// either of the COM2x1:0 bits are set", and Table 12-13 gives PD7's PVOE/PVOV as OC2A. DDR
-// still gates the pin, which uzebox_board.v applies via DDRD_out. Without this the pin showed
-// the PORTD latch, which the kernel never writes (uzeboxCore.c:135 omits PD7), so audio sat at
-// a constant level. The other OC pins on this part stay unrouted -- a pre-existing gap.
+// PD7 carries OC2A when the waveform generator owns it. doc2593O S15.6: "The general I/O port
+// function is overridden by the Output Compare (OC2x) from the Waveform Generator if either of
+// the COM2x1:0 bits are set"; Table 12-13 gives PD7 PVOE = OC2A ENABLE, PVOV = OC2A.
+// Deviation: S15.6 also requires DDR_OC2x set before the value is visible on the pin. Neither
+// this mux nor atmega-pio.v's io_out applies DDR, so OC2A reaches the pin regardless. Measured
+// 2026-09-16: identical PD7 edge counts with DDRD bit 7 set and clear. Same ungated path PORTD
+// already had; stock kernels set DDRD bit 7, so the deviation is latent. Other OC pins on this
+// part stay unrouted.
 assign PORTD_out = {tim2_oca_io_connect ? tim2_oca : pd_out[7], pd_out[6:0]};
 
 /* Interrupt wires — 27 real ATmega644 sources, datasheet S10.1 Table 10-1, vectors 2-28 */
