@@ -764,9 +764,12 @@ atmega_eep # (
     .EEDR_ADDR('h40),
     .EECR_ADDR('h3F),
     .EEP_SIZE(2048),
-    // 3.4 ms (ATmega644 Table 5-3) at the Uzebox's 28.63636 MHz = 97,364 core
-    // clocks. Revisit if the core clock changes.
-    .EEP_WRITE_CYCLES(97364),
+    // 26,368 calibrated-RC cycles (Table 6-2) at the 8 MHz RC oscillator (7.6)
+    // is 3.296 ms; at the Uzebox's 28.63636 MHz clk_avr that is 94,385 core
+    // clocks. Table 6-1's 3.4 ms for atomic erase+write is the same figure
+    // rounded differently; 6-2 is the one quoted in cycles, and the 32U4 above
+    // is derived from its identical Table 5-3. Revisit if the core clock changes.
+    .EEP_WRITE_CYCLES(94385),
     .EEP_WRITE_CNT_WIDTH(17)
 )eep(
     .rst(rst),
