@@ -602,6 +602,7 @@ atmega_tim_8bit # (
     .TIMSK_ADDR('h6E),
     .TIFR_ADDR('h35)
 )tim_0(
+    .halt(1'b0),
     .rst(rst),
     .clk(clk),
     .clk8(clk8),
@@ -812,6 +813,7 @@ atmega_tim_10bit # (
     .TIMSK_ADDR('h72),
     .TIFR_ADDR('h39)
 )tim_4(
+    .halt(1'b0),
     .rst(rst),
     .clk(clk),
     .clk_pll(tim_ck_out),
