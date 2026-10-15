@@ -21,12 +21,10 @@
 `timescale 1ns / 1ps
 
 //`define TIFR0 ('h00)
-// TIFR4 bit positions (15.12.13), not TIFR0's -- this module is the 32U4's Timer4.
-// TIMSK below was already remapped; the flag register was not, so mask and flag
-// disagreed and a poll of TOV4 read bit 0. Bits 3:0 are reserved on TIFR4.
-`define TOV0 2
-`define OCF0A 6
-`define OCF0B 5
+// TIFR4 bit positions (15.12.13).
+`define TOV4 2
+`define OCF4A 6
+`define OCF4B 5
 `define OCF0C 3
 `define OCF0D 7
 
@@ -190,9 +188,10 @@ begin
 end
 reg updt_ocr_on_top;
 reg updt_ocr_on_bottom;
+wire pwm_any = TCCRA[`PWMA] | TCCRA[`PWMB] | TCCRC[`PWMD];
 always @ *
 begin
-    casex({TCCRB[`PWM4X], TCCRD[`WGM01:`WGM00]})
+    casex({pwm_any, TCCRD[`WGM01:`WGM00]})
         3'b0xx: // Imediate.
         begin
             updt_ocr_on_top = 1'b0;
@@ -222,7 +221,7 @@ end
 reg [10:0]t_ovf_value;
 always @ *
 begin
-    case({TCCRB[`PWM4X], TCCRD[`WGM01:`WGM00]})
+    case({pwm_any, TCCRD[`WGM01:`WGM00]})
         3'b101, 3'b111: t_ovf_value = 10'h000;
         default: t_ovf_value = top_value;
     endcase
@@ -313,17 +312,17 @@ begin
     begin
         if(tov_p ^ tov_n)
         begin
-            TIFR[`TOV0] <= 1'b1;
+            TIFR[`TOV4] <= 1'b1;
             tov_n <= tov_p;
         end
         if(ocra_p ^ ocra_n)
         begin
-            TIFR[`OCF0A] <= 1'b1;
+            TIFR[`OCF4A] <= 1'b1;
             ocra_n <= ocra_p;
         end
         if(ocrb_p ^ ocrb_n)
         begin
-            TIFR[`OCF0B] <= 1'b1;
+            TIFR[`OCF4B] <= 1'b1;
             ocrb_n <= ocrb_p;
         end
         if(ocrd_p ^ ocrd_n)
@@ -333,15 +332,15 @@ begin
         end
         if(tov_int_rst)
         begin
-            TIFR[`TOV0] <= 1'b0;
+            TIFR[`TOV4] <= 1'b0;
         end
         if(ocra_int_rst)
         begin
-            TIFR[`OCF0A] <= 1'b0;
+            TIFR[`OCF4A] <= 1'b0;
         end
         if(ocrb_int_rst)
         begin
-            TIFR[`OCF0B] <= 1'b0;
+            TIFR[`OCF4B] <= 1'b0;
         end
         if(ocrd_int_rst)
         begin
@@ -362,7 +361,7 @@ begin
             begin
                 if({TCH, TCNTL} == OCRA_int)
                 begin
-                    if(~pwm_mode) // Table 15-5.
+                    if(~TCCRA[`PWMA]) // Table 15-5.
                     begin
                         case(TCCRA[`COM0A1:`COM0A0])
                             2'h1: oca <= ~oca;
@@ -396,7 +395,7 @@ begin
                     OCRB_int <= OCRB;
                 if({TCH, TCNTL} == OCRB_int)
                 begin
-                    if(~pwm_mode) // Table 15-10.
+                    if(~TCCRA[`PWMB]) // Table 15-10.
                     begin
                         case(TCCRA[`COM0B1:`COM0B0])
                             2'h1: ocb <= ~ocb;
@@ -434,7 +433,7 @@ begin
                     OCRD_int <= OCRD;
                 if({TCH, TCNTL} == OCRD_int)
                 begin
-                    if(~pwm_mode) // Table 15-15.
+                    if(~TCCRC[`PWMD]) // Table 15-15.
                     begin
                         case(TCCRC[`COM0D1:`COM0D0])
                             2'h1: ocd <= ~ocd;
@@ -465,21 +464,21 @@ begin
             // OCR4x == TOP holds the constant level of 15.8.2.
             if(&{{TCH, TCNTL} == top_value, ~halt, updt_ocr_on_top})
             begin
-                if(USE_OCRA == "TRUE")
+                if(USE_OCRA == "TRUE" && TCCRA[`PWMA])
                 begin
                     case(TCCRA[`COM0A1:`COM0A0])
                         2'h1, 2'h2: oca <= 1'b1;
                         2'h3: oca <= 1'b0;
                     endcase
                 end
-                if(USE_OCRB == "TRUE")
+                if(USE_OCRB == "TRUE" && TCCRA[`PWMB])
                 begin
                     case(TCCRA[`COM0B1:`COM0B0])
                         2'h1, 2'h2: ocb <= 1'b1;
                         2'h3: ocb <= 1'b0;
                     endcase
                 end
-                if(USE_OCRD == "TRUE")
+                if(USE_OCRD == "TRUE" && TCCRC[`PWMD])
                 begin
                     case(TCCRC[`COM0D1:`COM0D0])
                         2'h1, 2'h2: ocd <= 1'b1;
@@ -495,7 +494,7 @@ begin
             end
             if(&{{TCH, TCNTL} == top_value, ~halt})
             begin
-                case({TCCRB[`PWM4X], TCCRD[`WGM01:`WGM00]})
+                case({pwm_any, TCCRD[`WGM01:`WGM00]})
                     3'b101:
                     begin
                         up_count <= 1'b0;
@@ -506,7 +505,7 @@ begin
             end
             else if(&{{TCH, TCNTL} == 10'h000, ~halt})
             begin
-                case({TCCRB[`PWM4X], TCCRD[`WGM01:`WGM00]})
+                case({pwm_any, TCCRD[`WGM01:`WGM00]})
                     3'b101:
                     begin
                         up_count <= 1'b1;
@@ -514,18 +513,15 @@ begin
                     end
                 endcase
             end
+            if({pwm_any, TCCRD[`WGM01:`WGM00]} != 3'b101)
+                up_count <= 1'b1;
         end
         // Write registers
         clk_sys_del <= clk; // We need this because the system clk is slower than PLL clock for this timer.
         if({clk_sys_del, clk} == 2'b01 | ~pll_enabled)
         begin
             if(wr_dat & addr_dat == TIFR_ADDR)
-            begin
-                if(bus_dat_in[`TOV0])  TIFR[`TOV0]  <= 1'b0;
-                if(bus_dat_in[`OCF0A]) TIFR[`OCF0A] <= 1'b0;
-                if(bus_dat_in[`OCF0B]) TIFR[`OCF0B] <= 1'b0;
-                if(bus_dat_in[`OCF0D]) TIFR[`OCF0D] <= 1'b0;
-            end
+                TIFR <= TIFR & ~bus_dat_in;
             if(wr_dat)
             begin
                 case(addr_dat)
@@ -566,9 +562,9 @@ begin
     end
 end
 
-assign tov_int = TIFR[`TOV0] & TIMSK[`TOIE0];
-assign ocra_int = TIFR[`OCF0A] & TIMSK[`OCIE0A];
-assign ocrb_int = TIFR[`OCF0B] & TIMSK[`OCIE0B];
+assign tov_int = TIFR[`TOV4] & TIMSK[`TOIE0];
+assign ocra_int = TIFR[`OCF4A] & TIMSK[`OCIE0A];
+assign ocrb_int = TIFR[`OCF4B] & TIMSK[`OCIE0B];
 assign ocrd_int = TIFR[`OCF0D] & TIMSK[`OCIE0D];
 
 assign ocan = ~oca;
